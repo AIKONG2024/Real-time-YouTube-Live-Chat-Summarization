@@ -6,14 +6,14 @@ import os
 
 # Load the environment variables from the .env file
 load_dotenv()
-api_key = os.getenv('API_KEY')
+api_key = os.getenv('YOUTUBE_API_KEY')
 
 # Set the pafy backend to 'yt-dlp' and configure the API key
 os.environ['PAFY_BACKEND'] = 'yt-dlp'
 pafy.set_api_key(api_key)
 
 video_id = 'FJfwehhzIhw' #YTN 채널
-file_path = "./news_ytn_yt.csv"
+file_path = "./data/news_ytn_yt.csv"
 
 video = pafy.new(video_id)
 print(video.title)
