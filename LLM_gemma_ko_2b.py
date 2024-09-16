@@ -5,13 +5,13 @@ from transformers import pipeline
 # 모델 로드
 pipe = pipeline("text-generation", model="beomi/gemma-ko-2b", device=0) #GPU 사용, float16로 메모리 최적화
 
-file_path = './data/news_ytn_yt.csv'
+file_path = './data/news_mudo_yt.csv'
 data = pd.read_csv(file_path)
 comments = data['댓글 내용'].tolist()
 
 # 사용자 입력에 따른 메시지
 messages = [
-    {"role": "summarization", "content": f"{comments} 를 5줄로 요약해줘."}
+    {"role": "summarization", "content": f"{comments} 를 3줄로 요약해줘."}
 ]
 
 # 텍스트 생성

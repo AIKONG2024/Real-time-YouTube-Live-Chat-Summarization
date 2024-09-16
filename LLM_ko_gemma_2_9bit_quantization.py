@@ -4,7 +4,6 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from transformers import pipeline
 import bitsandbytes as bnb  # For quantization
 
-# GPU 설정 (0번 GPU를 사용하고, float16으로 설정)
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # 토크나이저 및 모델 로드 (8-bit 양자화 모델 로드)
@@ -16,7 +15,7 @@ model = AutoModelForCausalLM.from_pretrained(
 )
 
 # 파일 경로 설정 및 데이터 읽기
-file_path = './data/news_ytn_yt.csv'
+file_path = './data/news_mudo_yt.csv'
 data = pd.read_csv(file_path)
 
 # 댓글 내용 가져오기
