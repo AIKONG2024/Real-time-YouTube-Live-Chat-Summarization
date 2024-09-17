@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>유튜브 채팅 요약</title>
+</head>
+<body>
+    <h1>유튜브 라이브 채팅 요약</h1>
+    <form action="/start" method="POST">
+        <label for="video_id">비디오 ID:</label>
+        <input type="text" id="video_id" name="video_id" required><br><br>
+
+        <label for="channel_name">채널명:</label>
+        <input type="text" id="channel_name" name="channel_name" required><br><br>
+
+        <label for="collect_time">크롤링 시간 (초):</label>
+        <input type="number" id="collect_time" name="collect_time" value="10"><br><br>
+
+        <input type="submit" value="요약 시작">
+    </form>
+</body>
+</html>

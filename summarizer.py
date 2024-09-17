@@ -32,7 +32,7 @@ class CommentSummarizer:
         generated_text = self.tokenizer.decode(output[0], skip_special_tokens=True)
         return generated_text
 
-# 클래스 사용 예시
+# Test
 if __name__ == "__main__":
     model_name = "rtzr/ko-gemma-2-9b-it"
     file_path = './data/news_mudo_yt.csv'
