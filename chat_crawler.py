@@ -32,7 +32,7 @@ class Chat_Crawler:
         else:
             print(f"삭제할 파일이 없습니다: {self.file_path}")
 
-    def do_croling(self):
+    def do_crawling(self):
         video = self.__get_video()
 
         # 기존 파일이 있을 경우 삭제
@@ -94,4 +94,4 @@ if __name__ == "__main__":
     load_dotenv()
     api_key = os.getenv('YOUTUBE_API_KEY')
     croling_instance = Chat_Crawler(collect_time=10, youtube_api_key=api_key, video_id="w3YN5dH1JaQ", channel_name="mudo")
-    croling_instance.do_croling()
+    croling_instance.do_crawling()

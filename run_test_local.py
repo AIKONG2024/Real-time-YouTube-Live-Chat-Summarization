@@ -18,7 +18,7 @@ def main():
 
     # Chat_Crawler 인스턴스 생성 및 크롤링 수행
     crawler = Chat_Crawler(collect_time=collect_time, youtube_api_key=api_key, video_id=video_id, channel_name=channel_name)
-    crawler.do_croling()
+    crawler.do_crawling()
 
     # Step 2: 크롤링한 댓글 요약
     print("=== Step 2: 댓글 요약 시작 ===")
