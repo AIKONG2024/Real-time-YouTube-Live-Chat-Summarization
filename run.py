@@ -60,7 +60,7 @@ def start_summary():
     parent_conn, child_conn = multiprocessing.Pipe()
 
     # run_summarizer를 별도의 프로세스로 실행
-    process = multiprocessing.Process(target=run_summarizer, args=(video_id, channel_name, collect_time, child_conn))
+    # process = multiprocessing.Process(target=run_summarizer, args=(video_id, channel_name, collect_time, child_conn))
     process.start()
 
     # 요약 결과 수신
