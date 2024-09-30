@@ -17,7 +17,7 @@ class Chat_Crawler:
         os.environ['PAFY_BACKEND'] = 'yt-dlp'
         pafy.set_api_key(self.youtube_api_key)
 
-    def __get_video(self):
+    def get_video(self):
         video = pafy.new(self.video_id)
         return video
 
@@ -32,7 +32,6 @@ class Chat_Crawler:
             print(f"삭제할 파일이 없습니다: {self.file_path}")
 
     def do_crawling(self):
-        video = self.__get_video()
 
         # 기존 파일이 있을 경우 삭제
         self.__remove_existing_file()
@@ -62,9 +61,6 @@ class Chat_Crawler:
                     items = data.items
                     for c in items:
                         df = {
-                            '제목': [video.title],
-                            '채널 명': [video.author],
-                            '스트리밍 시작 시간': [video.published],
                             '댓글 작성자': [c.author.name],
                             '댓글 내용': [c.message],
                             '댓글 작성 시간': [c.datetime]

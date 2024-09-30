@@ -16,7 +16,7 @@ class CommentSummarizer:
     def set_chat_file_path(self, chat_file_path):
         self.chat_file_path = chat_file_path
 
-    def load_chat(self):
+    def __load_chat(self):
         # 채팅 데이터를 로드하고 전처리
         if self.chat_file_path:
             with open(self.chat_file_path, 'r', encoding='utf-8') as f:
@@ -26,7 +26,7 @@ class CommentSummarizer:
             return ""
 
     def summarize(self, prompt_template, should_stop=None, max_length=500, temperature=0.7):
-        comments = self.load_chat()
+        comments = self.__load_chat()
         prompt = prompt_template.format(comments=comments)
         input_ids = self.tokenizer.encode(prompt, return_tensors='pt').to(self.device)
         prompt_length = input_ids.shape[-1]
