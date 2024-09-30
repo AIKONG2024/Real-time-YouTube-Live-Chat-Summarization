@@ -1,19 +1,125 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>요약 결과</title>
+    <style>
+        /* 기존 스타일 생략 */
+
+        /* 작은 원형 로더 스타일 */
+        .small-loader {
+            border: 8px solid #f3f3f3; /* 밝은 회색 */
+            border-top: 8px solid #3498db; /* 파란색 */
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 2s linear infinite;
+            display: inline-block;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        #collection-info {
+            margin-top: 20px;
+        }
+    </style>
 </head>
 <body>
-    <h1>{{ message }}</h1>
-    
-    <h2>요약 내용</h2>
-    <p>{{ summary_result.summary }}</p>
+    <div class="clearfix">
+        <div id="chat-container">
+            <h2>채팅 내용</h2>
+            <pre id="chat"></pre>
+        </div>
+        <div id="summary-container">
+            <h2>요약 결과</h2>
+            <p id="summary"></p>
+            <!-- 수집 시간 표시 및 원형 인디케이터 -->
+            <div id="collection-info">
+                <span>수집 시간: {{ collect_time }}초</span>
+                <div id="loader" class="small-loader"></div>
+            </div>
+            <button id="stop-button" onclick="stopSummarization()">요약 중지</button>
+            <br><br>
+            <a href="/history">히스토리 보기</a>
+        </div>
+    </div>
+    <a href="/">다시 시도하기</a>
 
-    <h2>긍정/부정 비율</h2>
-    <p>{{ summary_result.positive_negative_ratio }}</p>
+    <script>
+        let isSummarizing = true;
+        const sessionId = "{{ session_id }}";  // Flask 템플릿에서 session_id 전달
 
-    <a href="/">홈으로 돌아가기</a>
+        function updateSummary() {
+            fetch('/update_summary', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({session_id: sessionId})
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('summary').innerText = data.summary;
+            });
+        }
+
+        function updateChat() {
+            fetch('/get_chat', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({session_id: sessionId})
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('chat').innerText = data.chat;
+            });
+        }
+
+        function stopSummarization() {
+            fetch('/stop', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({session_id: sessionId})
+            })
+            .then(response => response.json())
+            .then(data => {
+                isSummarizing = false;
+                document.getElementById('loader').style.display = 'none';
+            });
+        }
+
+        function checkSummarizingStatus() {
+            fetch('/is_summarizing', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({session_id: sessionId})
+            })
+            .then(response => response.json())
+            .then(data => {
+                isSummarizing = data.is_summarizing;
+                if (!isSummarizing) {
+                    // 작업이 중지되면 인디케이터 숨기기
+                    document.getElementById('loader').style.display = 'none';
+                }
+            });
+        }
+
+        window.onload = () => {
+            updateChat();    // 채팅 내용 초기 로드
+            updateSummary(); // 요약 결과 초기 로드
+
+            let interval = setInterval(() => {
+                if (isSummarizing) {
+                    updateChat();
+                    updateSummary();
+                    checkSummarizingStatus();
+                } else {
+                    clearInterval(interval);
+                }
+            }, {{ collect_time }} * 1000); // 수집 시간마다 갱신
+        }
+    </script>
 </body>
 </html>

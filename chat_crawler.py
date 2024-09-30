@@ -8,12 +8,11 @@ import os
 from tqdm import tqdm 
 
 class Chat_Crawler:
-    def __init__(self, collect_time, youtube_api_key, video_id, channel_name):
+    def __init__(self, collect_time, youtube_api_key, video_id):
         self.collect_time = collect_time  # 댓글 수집 시간 (초)
         self.youtube_api_key = youtube_api_key
         self.video_id = video_id
-        self.channel_name = channel_name
-        self.file_path = f"./data/news_{channel_name}_yt.csv"
+        self.file_path = f"./data/{video_id}_chat.csv"
 
         os.environ['PAFY_BACKEND'] = 'yt-dlp'
         pafy.set_api_key(self.youtube_api_key)
@@ -23,7 +22,7 @@ class Chat_Crawler:
         return video
 
     def __create_chat_instance(self):
-        return pytchat.create(video_id=self.video_id)
+        return pytchat.create(video_id=self.video_id, interruptable=False)
 
     def __remove_existing_file(self):
         if os.path.exists(self.file_path):
@@ -39,7 +38,7 @@ class Chat_Crawler:
         self.__remove_existing_file()
 
         # CSV 파일 새로 생성
-        empty_df = pd.DataFrame(columns=['제목', '채널 명', '스트리밍 시작 시간', '댓글 작성자', '댓글 내용', '댓글 작성 시간'])
+        empty_df = pd.DataFrame(columns=['댓글 작성자', '댓글 내용', '댓글 작성 시간'])
         empty_df.to_csv(self.file_path, index=False, encoding='utf-8-sig')
 
         # 채팅 인스턴스 생성

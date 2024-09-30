@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>요약 히스토리</title>
+</head>
+<body>
+    <h1>요약 히스토리</h1>
+    <ul>
+        {% for summary in history %}
+            <li>{{ summary }}</li>
+        {% endfor %}
+    </ul>
+    <a href="/">메인 페이지로 이동</a>
+</body>
+</html>

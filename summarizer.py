@@ -1,49 +1,65 @@
 import torch
-import pandas as pd
-from transformers import AutoModelForCausalLM, AutoTokenizer
-import bitsandbytes as bnb  # For quantization
+from transformers import AutoTokenizer, AutoModelForCausalLM
 
 class CommentSummarizer:
-    def __init__(self, model_name, chat_file_path, device="cuda:0"):
-        self.device = torch.device(device if torch.cuda.is_available() else "cpu")
+    def __init__(self, model_name):
+        # 모델과 토크나이저 초기화
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.model = AutoModelForCausalLM.from_pretrained(
             model_name, 
             load_in_8bit=True,  # 8-bit quantization
             device_map='auto',  # Automatically selects the device (GPU)
         )
-        self.file_path = chat_file_path
+        self.chat_file_path = None
+
+    def set_chat_file_path(self, chat_file_path):
+        self.chat_file_path = chat_file_path
 
     def load_chat(self):
-        data = pd.read_csv(self.file_path)
-        comments = data['댓글 내용'].tolist()
-        return comments
+        # 채팅 데이터를 로드하고 전처리
+        if self.chat_file_path:
+            with open(self.chat_file_path, 'r', encoding='utf-8') as f:
+                comments = f.read()
+            return comments
+        else:
+            return ""
 
-    def summarize(self, prompt_template, max_length=5000, temperature=0.7):
+    def summarize(self, prompt_template, should_stop=None, max_length=500, temperature=0.7):
         comments = self.load_chat()
-        # 입력 프롬프트 설정
         prompt = prompt_template.format(comments=comments)
         input_ids = self.tokenizer.encode(prompt, return_tensors='pt').to(self.device)
-        
-        # 텍스트 생성
-        with torch.no_grad():
-            output = self.model.generate(input_ids, max_length=max_length, do_sample=True, temperature=temperature)
-        
-        generated_text = self.tokenizer.decode(output[0], skip_special_tokens=True)
-        return generated_text
+        prompt_length = input_ids.shape[-1]
 
-# Test
-if __name__ == "__main__":
-    model_name = "rtzr/ko-gemma-2-9b-it"
-    file_path = './data/news_mudo_yt.csv'
+        # 텍스트 생성 설정
+        generate_kwargs = {
+            'input_ids': input_ids,
+            'max_length': prompt_length + max_length,
+            'do_sample': True,
+            'temperature': temperature,
+            'pad_token_id': self.tokenizer.eos_token_id,
+        }
 
-    # CommentSummarizer 클래스 인스턴스 생성
-    summarizer = CommentSummarizer(model_name=model_name, chat_file_path=file_path)
+        # 생성 진행 중에 중단 여부 확인
+        output = input_ids
+        try:
+            with torch.no_grad():
+                for _ in range(0, max_length, 50):  # 50 토큰씩 생성
+                    if should_stop and should_stop():
+                        print("요약 작업 중단됨")
+                        return "요약 작업이 중단되었습니다."
+                    output = self.model.generate(
+                        input_ids=output,
+                        max_length=output.shape[1] + 50,
+                        do_sample=True,
+                        temperature=temperature,
+                        pad_token_id=self.tokenizer.eos_token_id,
+                        eos_token_id=self.tokenizer.eos_token_id,
+                    )
+        except Exception as e:
+            print(f"요약 중 에러 발생: {str(e)}")
+            return f"요약 중 에러 발생: {str(e)}"
 
-    # 입력 프롬프트
-    prompt_template = "{comments} 이건 유튜브 라이브채팅 댓글이야. 어떤 주제를 가지고 얘기를 하고 있고, 대화의 흐름을 파악해서 주제를 3줄로 요약해줘."
-
-    # 요약 생성
-    summary = summarizer.summarize(prompt_template)
-    print("=== 요약 결과 ===")
-    print(summary)
+        generated_tokens = output[0, prompt_length:]
+        generated_text = self.tokenizer.decode(generated_tokens, skip_special_tokens=True)
+        return generated_text.strip()
