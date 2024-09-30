@@ -32,66 +32,70 @@ def run_summarizer(session_id, video_id, collect_time, prompt_template):
         with status_lock:
             summarizing_status[session_id] = True
 
-        # 채팅 크롤링 및 비디오 정보 가져오기
-        print("=== 채팅 크롤링 시작 ===")
-        crawler = Chat_Crawler(
-            collect_time=collect_time,
-            youtube_api_key=api_key,
-            video_id=video_id
-        )
+        while summarizing_status.get(session_id, False):
+            # 채팅 크롤링 및 비디오 정보 가져오기
+            print("=== 채팅 크롤링 시작 ===")
+            crawler = Chat_Crawler(
+                collect_time=collect_time,
+                youtube_api_key=api_key,
+                video_id=video_id
+            )
 
-        # 비디오 정보는 한 번만 가져옴
-        if session_id not in video_info_dict:
-            video_info = crawler.get_video()
-            video_info_dict[session_id] = {
-                "video_title": video_info.title,
-                "video_author": video_info.author,
-                "video_published": video_info.published
-            }
-        else:
-            video_info = video_info_dict[session_id]
+            # 비디오 정보는 한 번만 가져옴
+            if session_id not in video_info_dict:
+                video_info = crawler.get_video()
+                video_info_dict[session_id] = {
+                    "video_title": video_info.title,
+                    "video_author": video_info.author,
+                    "video_published": video_info.published
+                }
+            else:
+                video_info = video_info_dict[session_id]
 
-        # 채팅 크롤링 수행
-        crawler.do_crawling()
-        print("=== 채팅 크롤링 완료 ===")
+            # 채팅 크롤링 수행
+            crawler.do_crawling()
+            print("=== 채팅 크롤링 완료 ===")
 
-        # 채팅 파일 경로 설정
-        chat_file_path = f'./data/{video_id}_chat.csv'
+            # 채팅 파일 경로 설정
+            chat_file_path = f'./data/{video_id}_chat.csv'
 
-        # 크롤링한 채팅 내용을 저장
-        with open(chat_file_path, 'r', encoding='utf-8') as f:
-            chat_content = f.read()
+            # 크롤링한 채팅 내용을 저장
+            with open(chat_file_path, 'r', encoding='utf-8') as f:
+                chat_content = f.read()
 
-        # 채팅 내용 저장
-        with data_lock:
-            chat_contents[session_id] = chat_content
-            result_dict[session_id] = {"summary": ""}
+            # 채팅 내용 저장
+            with data_lock:
+                chat_contents[session_id] = chat_content
+                result_dict[session_id] = {"summary": ""}
 
-        # summarizer에 chat_file_path 설정
-        summarizer.set_chat_file_path(chat_file_path)
+            # summarizer에 chat_file_path 설정
+            summarizer.set_chat_file_path(chat_file_path)
 
-        # 요약 결과 생성
-        print("=== 요약 생성 시작 ===")
-        def should_stop():
-            with status_lock:
-                return not summarizing_status.get(session_id, False)
-        summary_result = summarizer.summarize(prompt_template, should_stop=should_stop)
-        print("=== 요약 생성 완료 ===")
+            # 요약 결과 생성
+            print("=== 요약 생성 시작 ===")
+            def should_stop():
+                with status_lock:
+                    return not summarizing_status.get(session_id, False)
+            summary_result = summarizer.summarize(prompt_template, should_stop=should_stop)
+            print("=== 요약 생성 완료 ===")
 
-        # 요약 결과 저장
-        with data_lock:
-            result_dict[session_id]["summary"] = summary_result
-            history.append(summary_result)
+            # 요약 결과 저장
+            with data_lock:
+                result_dict[session_id]["summary"] = summary_result
+                history.append(summary_result)
 
-        # 상태 확인 후 대기
-        wait_time = 0
-        while wait_time < collect_time:
-            with status_lock:
-                if not summarizing_status.get(session_id, False):
-                    break
-            time.sleep(1)
-            wait_time += 1
+            # 상태 확인 후 대기 (대기 시간 후 다시 반복)
+            wait_time = 0
+            while wait_time < collect_time:
+                with status_lock:
+                    if not summarizing_status.get(session_id, False):
+                        return  # 중지 명령을 받으면 함수를 종료
+                time.sleep(1)
+                wait_time += 1
 
+            # 연속 요약을 위한 작은 대기 시간 설정
+            time.sleep(1)  # 2초 후 다음 요약을 시작 (조정 가능)
+    
     except Exception as e:
         print(f"에러 발생: {str(e)}")
         with data_lock:
