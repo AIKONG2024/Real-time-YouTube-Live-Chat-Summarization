@@ -5,7 +5,8 @@
 2. **The summary will repeat continuously**
 3. **Chat results and summary outcomes are displayed, and a graph shows positive/negative sentiment based on the chat atmosphere**
 4. **If the sentiment is positive, the summary result will blink blue; if negative, it will blink red**
-
+5. **It can check the summary history by clicking on "View History.**
+   
 ## Project Description
 The project aims to develop a system that can summarize real-time YouTube live chat.  
 With YouTube live streams becoming increasingly popular, managing and understanding fast-paced live chats can be challenging.  
