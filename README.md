@@ -21,7 +21,7 @@ python version : 3.11.9
 1. **Clone Repository**
 
    ```bash
-   git clone https://github.com/AIKONG2024/YouTube_chat_summary.git
+   git clone https://github.com/AIKONG2024/Real-time-YouTube-Live-Chat-Summarization.git
 2. **Pip install**
 
    ```bash
