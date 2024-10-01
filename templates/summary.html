@@ -4,15 +4,73 @@
     <meta charset="UTF-8">
     <title>{{ video_title }} - 요약 결과</title>
     <style>
-        /* 기존 스타일 생략 */
+        /* 공통 스타일 */
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f9f9f9; /* 기본 배경색 */
+            color: #333333; /* 기본 텍스트 색 */
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            background-color: white;
+        }
+
+        h2 {
+            margin: 0;
+            padding-bottom: 10px;
+        }
+
+        /* 테마 별 스타일 */
+        .safari {
+            background-color: #f0f8e7;
+            color: #2c3e50;
+        }
+
+        /* 스크롤 가능한 채팅 스타일 */
+        .chat-scroll-container {
+            max-height: 200px; /* 최대 높이 설정 */
+            overflow-y: auto; /* 세로 스크롤바 활성화 */
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            margin-top: 20px;
+        }
+
+        /* 카드 스타일 */
+        .chat-card {
+            background-color: #f1f1f1;
+            border-radius: 8px;
+            padding: 5px;
+            margin-bottom: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .chat-author {
+            font-weight: bold;
+            color: #3498db;
+        }
+
+        .chat-time {
+            font-size: 0.8em;
+            color: #666;
+            margin-top: 5px;
+        }
 
         /* 작은 원형 로더 스타일 */
         .small-loader {
-            border: 8px solid #f3f3f3; /* 밝은 회색 */
-            border-top: 8px solid #3498db; /* 파란색 */
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid #3498db;
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
+            width: 15px;
+            height: 15px;
             animation: spin 2s linear infinite;
             display: inline-block;
             margin-left: 10px;
@@ -23,55 +81,144 @@
             100% { transform: rotate(360deg); }
         }
 
-        #collection-info {
+        /* 바 그래프 스타일 */
+        .bar-container {
+            display: none;
+            align-items: center;
+            margin-top: 20px;
+            height: 50px;
+        }
+
+        .bar {
+            position: relative;
+            height: 100%;
+            border-radius: 5px;
+            transition: width 1s ease;
+        }
+
+        .positive-bar {
+            background-color: #3498db;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .negative-bar {
+            background-color: #e74c3c;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        /* 배경색 애니메이션 */
+        .positive-background {
+            animation: backgroundPulseBlue 2s infinite;
+            animation-iteration-count: 3; /* 3번 반복 */
+        }
+        
+        .negative-background {
+            animation: backgroundPulseRed 2s infinite;
+            animation-iteration-count: 3; /* 3번 반복 */
+        }
+        
+        @keyframes backgroundPulseBlue {
+            0% { background-color: white; }
+            50% { background-color: #3498db; }
+            100% { background-color: white; }
+        }
+        
+        @keyframes backgroundPulseRed {
+            0% { background-color: white; }
+            50% { background-color: #e74c3c; }
+            100% { background-color: white; }
+        }
+
+        /* 로딩 메시지 스타일 */
+        #loading-message {
+            display: none;
+            justify-content: center;
+            align-items: center;
             margin-top: 20px;
         }
 
-        #video-info {
-            margin-bottom: 20px;
+        #loading-text {
+            font-size: 1em;
+            color: #333;
         }
 
-        #video-info h1 {
-            margin: 0;
+        /* 버튼 스타일 */
+        button {
+            background-color: #3498db;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: #2980b9;
         }
     </style>
 </head>
-<body>
-    <!-- 비디오 정보 표시 -->
-    <div id="video-info">
-        <div id="video-title">유튜브 라이브 방송명: {{ video_title }}</div>
-        <div id="video-author">채널 명: {{ video_author }}</div>
-        <div id="video-published">라이브 시작일: {{ video_published }}</div>
-    </div>
+<body class="safari">
+    <div class="container">
+        <div id="notice-container">
+            <div><span>유튜브 실시간 채팅 요약이 반복 진행됩니다.</span></div>
+            <div><span>채팅 수집 시간: {{ collect_time }}sec</span></div>
+            <div><span>* 요약 중지 - 요약을 멈춤 </span></div>
+            <div><span>* 히스토리 보기 - 요약 기록 확인 </span></div>
+            <div id="loader" class="small-loader"></div>
+            <button id="toggle-button" onclick="stopSummarization()">요약 중지</button>
+        </div>
+        <!-- 비디오 정보 표시 -->
+        <div id="video-info">
+            <h2>유튜브 라이브</h2>
+            <div id="video-title">유튜브 라이브 방송명: {{ video_title }}</div>
+            <div id="video-author">채널 명: {{ video_author }}</div>
+            <div id="video-published">라이브 시작일: {{ video_published }}</div>
+        </div>
 
-    <div class="clearfix">
-        <div id="chat-container">
-            <h2>채팅 내용</h2>
-            <pre id="chat"></pre>
-        </div>
-        <div id="summary-container">
-            <h2>요약 결과</h2>
-            <p id="summary">{{ summary_result }}</p>
-            <!-- 수집 시간 표시 및 원형 인디케이터 -->
-            <div id="collection-info">
-                <span>수집 시간: {{ collect_time }}초</span>
-                <div id="loader" class="small-loader"></div>
+        <div class="clearfix">
+            <div id="chat-container">
+                <h2>채팅 내용</h2>
+                <div id="chat" class="chat-scroll-container"></div>
             </div>
-            <button id="stop-button" onclick="stopSummarization()">요약 중지</button>
-            <div><a href="/history" target="_blank">히스토리 보기</a></div>
-            <div><a href="/">다시 시도하기</a></div>
+            
+            <div id="result-container">
+                <h2>요약 결과</h2>
+                <div id="summary-container">
+                    <!-- 로딩 메시지 -->
+                    <div id="loading-message" style="display:none;">
+                        <span id="loading-text">요약 중입니다...</span>
+                    </div>
+                    <p id="summary">{{ summary_result }}</p>
+                </div>
+               
+                <h2>민심</h2>
+                <!-- 긍정 및 부정 비율을 시각화하는 바 그래프 -->
+                <div id="bar-graph" class="bar-container">
+                    <div class="bar positive-bar" id="positive-bar" style="width: 0%;">긍정: 0%</div>
+                    <div class="bar negative-bar" id="negative-bar" style="width: 0%;">부정: 0%</div>
+                </div>
+            </div>
         </div>
+        <div><a href="/history" target="_blank">히스토리 보기</a></div>
+        <div><a href="/" onclick="stopAndRetry();">다시 시도하기</a></div>
     </div>
-    <div id="notice-container">
-        <div><span>유튜브 실시간 채팅 요약이 반복 진행됩니다.</span></div>
-        <div><span>* 요약 중지 - 요약을 멈춤 </span></div>
-        <div><span>* 히스토리 보기 - 요약 기록 확인 </span></div>
-    </div>
-    
 
     <script>
         let isSummarizing = true;
-        const sessionId = "{{ session_id }}";  // Flask 템플릿에서 session_id 전달
+        const sessionId = "{{ session_id }}";
+
+        function hideLoadingMessage() {
+            document.getElementById('loading-message').style.display = 'none';
+        }
 
         function updateSummary() {
             fetch('/update_summary', {
@@ -82,7 +229,61 @@
             .then(response => response.json())
             .then(data => {
                 document.getElementById('summary').innerText = data.summary;
+
+                // 긍정/부정 비율에 따른 배경색 변경
+                const positiveRatio = data.positive_ratio;
+                const negativeRatio = data.negative_ratio;
+
+                const summaryContainer = document.getElementById('summary-container');
+                
+                if (positiveRatio > negativeRatio) {
+                    summaryContainer.classList.add('positive-background');
+                    summaryContainer.classList.remove('negative-background');
+                } else if (negativeRatio > positiveRatio) {
+                    summaryContainer.classList.add('negative-background');
+                    summaryContainer.classList.remove('positive-background');
+                } else {
+                    summaryContainer.classList.remove('positive-background');
+                    summaryContainer.classList.remove('negative-background');
+                }
+
+                // 바 그래프 업데이트
+                updateBarGraph(positiveRatio, negativeRatio);
             });
+        }
+
+        function updateBarGraph(positiveRatio, negativeRatio) {
+            const total = positiveRatio + negativeRatio;
+            const positiveBar = document.getElementById('positive-bar');
+            const negativeBar = document.getElementById('negative-bar');
+            const barGraph = document.getElementById('bar-graph');
+
+            if (total === 0) {
+                barGraph.style.display = 'none';
+            } else {
+                barGraph.style.display = 'flex';
+
+                if (positiveRatio === 100) {
+                    positiveBar.style.width = '100%';
+                    positiveBar.innerText = `긍정: ${positiveRatio}%`;
+                    negativeBar.style.display = 'none';
+                } else if (negativeRatio === 100) {
+                    negativeBar.style.width = '100%';
+                    negativeBar.innerText = `부정: ${negativeRatio}%`;
+                    positiveBar.style.display = 'none';
+                } else {
+                    const positiveWidth = (positiveRatio / total) * 100;
+                    const negativeWidth = (negativeRatio / total) * 100;
+
+                    positiveBar.style.width = positiveWidth + '%';
+                    positiveBar.innerText = `긍정: ${positiveRatio}%`;
+                    positiveBar.style.display = 'flex';
+
+                    negativeBar.style.width = negativeWidth + '%';
+                    negativeBar.innerText = `부정: ${negativeRatio}%`;
+                    negativeBar.style.display = 'flex';
+                }
+            }
         }
 
         function updateChat() {
@@ -93,7 +294,19 @@
             })
             .then(response => response.json())
             .then(data => {
-                document.getElementById('chat').innerText = data.chat;
+                const chatContainer = document.getElementById('chat');
+                chatContainer.innerHTML = '';
+                const chatMessages = data.chat.split('\n');
+
+                chatMessages.slice(1).forEach((message) => {
+                    if (message.trim()) {
+                        const [author, content, timestamp] = message.split(',');
+                        if (author && content && timestamp) {
+                            const card = `<div class="chat-card"><span class="chat-author">${author}</span><p>${content}</p><span class="chat-time">${timestamp}</span></div>`;
+                            chatContainer.innerHTML += card;
+                        }
+                    }
+                });
             });
         }
 
@@ -107,21 +320,47 @@
             .then(data => {
                 document.getElementById('video-title').innerText = '유튜브 라이브 방송: ' + data.video_title;
                 document.getElementById('video-author').innerText = '채널 명: ' + data.video_author;
-                document.getElementById('video-published').innerText = '방송 시작일: ' + data.video_published;
+                document.getElementById('video-published').innerText = '라이브 시작일: ' + data.video_published;
             });
         }
 
         function stopSummarization() {
-            fetch('/stop', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({session_id: sessionId})
-            })
-            .then(response => response.json())
-            .then(data => {
-                isSummarizing = false;
-                document.getElementById('loader').style.display = 'none';
-            });
+            if (isSummarizing) {
+                fetch('/stop', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({session_id: sessionId})
+                })
+                .then(response => response.json())
+                .then(data => {
+                    isSummarizing = false;
+                    document.getElementById('loader').style.display = 'none';
+                    document.getElementById('toggle-button').innerText = '요약 시작';
+                    document.getElementById('toggle-button').onclick = startSummarization;
+                });
+            }
+        }
+
+        function startSummarization() {
+            if (!isSummarizing) {
+                fetch('/resume', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({session_id: sessionId})
+                })
+                .then(response => response.json())
+                .then(data => {
+                    isSummarizing = true;
+                    document.getElementById('loader').style.display = 'inline-block';
+                    document.getElementById('toggle-button').innerText = '요약 중지';
+                    document.getElementById('toggle-button').onclick = stopSummarization;
+                    startInterval();
+                });
+            }
+        }
+
+        function stopAndRetry() {
+            stopSummarization()
         }
 
         function checkSummarizingStatus() {
@@ -133,19 +372,30 @@
             .then(response => response.json())
             .then(data => {
                 isSummarizing = data.is_summarizing;
+                
+                const loadingMessage = document.getElementById('loading-message');
+                const barGraph = document.getElementById('bar-graph');
+        
                 if (!isSummarizing) {
-                    // 작업이 중지되면 인디케이터 숨기기
                     document.getElementById('loader').style.display = 'none';
+                    document.getElementById('toggle-button').innerText = '요약 시작';
+                    document.getElementById('toggle-button').onclick = startSummarization;
+                    loadingMessage.style.display = 'flex';  // 로딩 메시지 표시
+                    barGraph.style.display = 'none';  // 바 그래프 숨기기
+                } else {
+                    document.getElementById('loader').style.display = 'inline-block';
+                    document.getElementById('toggle-button').innerText = '요약 중지';
+                    document.getElementById('toggle-button').onclick = stopSummarization;
+                    loadingMessage.style.display = 'none';  // 로딩 메시지 숨기기
+                    barGraph.style.display = 'flex';  // 바 그래프 표시
                 }
             });
         }
 
-        window.onload = () => {
-            updateChat();    // 채팅 내용 초기 로드
-            updateSummary(); // 요약 결과 초기 로드
-            updateVideoInfo(); // 비디오 정보 초기 로드
+        let interval;
 
-            let interval = setInterval(() => {
+        function startInterval() {
+            interval = setInterval(() => {
                 if (isSummarizing) {
                     updateChat();
                     updateSummary();
@@ -154,7 +404,14 @@
                 } else {
                     clearInterval(interval);
                 }
-            }, {{ collect_time }} * 1000); // 수집 시간마다 갱신
+            }, 1000);
+        }
+
+        window.onload = () => {
+            updateChat();
+            updateSummary();
+            updateVideoInfo();
+            startInterval();
         }
     </script>
 </body>

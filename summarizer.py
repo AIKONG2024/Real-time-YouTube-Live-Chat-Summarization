@@ -62,4 +62,35 @@ class CommentSummarizer:
 
         generated_tokens = output[0, prompt_length:]
         generated_text = self.tokenizer.decode(generated_tokens, skip_special_tokens=True)
-        return generated_text.strip()
+        
+        # 긍정 및 부정 비율 추출
+        positive_ratio, negative_ratio = self.extract_sentiment(generated_text)
+
+        # 요약 내용과 긍정/부정 비율 반환
+        return generated_text.strip(), positive_ratio, negative_ratio
+
+    def extract_sentiment(self, generated_text):
+        # "긍정:XX/부정:XX" 형식의 데이터 추출
+        print(generated_text)
+        
+        # 맨 뒤의 공백 제거
+        generated_text = generated_text.strip()
+
+        positive_ratio = 0
+        negative_ratio = 0
+
+        # 마지막 줄에서 긍정/부정 비율 추출
+        sentiment_info = generated_text.split("\n")[-1]  # 가장 마지막 줄 추출
+        
+        try:
+            # 긍정과 부정 비율 추출
+            if "긍정:" in sentiment_info and "부정:" in sentiment_info:
+                # 긍정 다음의 숫자 추출
+                positive_ratio = int(sentiment_info.split("긍정:")[1].split("/")[0].strip().replace('%', ''))
+                # 부정 다음의 숫자 추출
+                negative_ratio = int(sentiment_info.split("부정:")[1].strip().replace('%', ''))
+        except (ValueError, IndexError):
+            print("긍정 및 부정 비율을 추출하는 데 오류가 발생했습니다.")
+
+        return positive_ratio, negative_ratio
+

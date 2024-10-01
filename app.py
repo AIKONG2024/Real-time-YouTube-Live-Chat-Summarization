@@ -23,14 +23,25 @@ summarizing_status = {}
 result_dict = {}
 chat_contents = {}
 video_info_dict = {}  # 비디오 정보 저장
+session_params = {}   # 세션별 파라미터 저장
 history = []
 status_lock = threading.Lock()
 data_lock = threading.Lock()
 
-def run_summarizer(session_id, video_id, collect_time, prompt_template):
+def run_summarizer(session_id):
     try:
         with status_lock:
             summarizing_status[session_id] = True
+
+        # 세션별 파라미터 가져오기
+        params = session_params.get(session_id)
+        if not params:
+            print("세션 파라미터를 찾을 수 없습니다.")
+            return
+
+        video_id = params['video_id']
+        collect_time = params['collect_time']
+        prompt_template = params['prompt_template']
 
         while summarizing_status.get(session_id, False):
             # 채팅 크롤링 및 비디오 정보 가져오기
@@ -76,12 +87,14 @@ def run_summarizer(session_id, video_id, collect_time, prompt_template):
             def should_stop():
                 with status_lock:
                     return not summarizing_status.get(session_id, False)
-            summary_result = summarizer.summarize(prompt_template, should_stop=should_stop)
+            summary_result, positive_ratio, negative_ratio = summarizer.summarize(prompt_template, should_stop=should_stop)
             print("=== 요약 생성 완료 ===")
 
             # 요약 결과 저장
             with data_lock:
                 result_dict[session_id]["summary"] = summary_result
+                result_dict[session_id]["positive_ratio"] = positive_ratio
+                result_dict[session_id]["negative_ratio"] = negative_ratio
                 history.append(summary_result)
 
             # 상태 확인 후 대기 (대기 시간 후 다시 반복)
@@ -94,7 +107,7 @@ def run_summarizer(session_id, video_id, collect_time, prompt_template):
                 wait_time += 1
 
             # 연속 요약을 위한 작은 대기 시간 설정
-            time.sleep(1)  # 2초 후 다음 요약을 시작 (조정 가능)
+            time.sleep(1)  # 초 후 다음 요약을 시작 (조정 가능)
     
     except Exception as e:
         print(f"에러 발생: {str(e)}")
@@ -139,10 +152,17 @@ def start_summary():
 - 다른 불필요한 말은 생략하고, 위의 형식으로만 출력해줘.
 """
 
+    # 세션별 파라미터 저장
+    session_params[session_id] = {
+        'video_id': video_id,
+        'collect_time': collect_time,
+        'prompt_template': prompt_template
+    }
+
     # 요약 작업을 별도의 스레드에서 실행
     summarizer_thread = threading.Thread(
         target=run_summarizer,
-        args=(session_id, video_id, collect_time, prompt_template)
+        args=(session_id,)
     )
     summarizer_thread.start()
 
@@ -185,12 +205,38 @@ def stop_summary():
             summarizing_status[session_id] = False
     return jsonify({'status': 'stopped'})
 
+@app.route('/resume', methods=['POST'])
+def resume_summary():
+    session_id = request.json.get('session_id')
+    with status_lock:
+        if summarizing_status.get(session_id, False):
+            return jsonify({'status': 'already running'})
+        else:
+            summarizing_status[session_id] = True
+            # 요약 작업을 별도의 스레드에서 실행
+            summarizer_thread = threading.Thread(
+                target=run_summarizer,
+                args=(session_id,)
+            )
+            summarizer_thread.start()
+            return jsonify({'status': 'resumed'})
+
 @app.route('/update_summary', methods=['POST'])
 def update_summary():
     session_id = request.json.get('session_id')
     with data_lock:
-        summary_result = result_dict.get(session_id, {}).get("summary", "")
-    return jsonify({'summary': summary_result})
+        summary_data = result_dict.get(session_id, {})
+        summary_result = summary_data.get("summary", "")
+        
+        # 긍정/부정 비율도 반환
+        positive_ratio = summary_data.get("positive_ratio", 50)  # 기본값 50
+        negative_ratio = summary_data.get("negative_ratio", 50)  # 기본값 50
+        
+    return jsonify({
+        'summary': summary_result,
+        'positive_ratio': positive_ratio,
+        'negative_ratio': negative_ratio
+    })
 
 @app.route('/get_chat', methods=['POST'])
 def get_chat():
@@ -212,4 +258,5 @@ def view_history():
         return render_template('history.html', history=history)
 
 if __name__ == "__main__":
-    app.run(debug=False, use_reloader=False)
+    # 외부 접속 가능하게 설정
+    app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
