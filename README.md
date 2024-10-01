@@ -33,7 +33,7 @@ python version : 3.11.9
    python app.py
    #I performed inference using a 4090 GPU. Systems with lower performance may not be able to run this.
 
-##  Use Model
+##  Used LLM Model
   Gemma1,2 Korean Fine-tunning Models  
   
   **rtzr/ko-gemma-2-9b-it(https://huggingface.co/rtzr/ko-gemma-2-9b-it)**  
