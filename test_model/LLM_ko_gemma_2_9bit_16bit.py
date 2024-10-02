@@ -9,7 +9,8 @@ model_name = "rtzr/ko-gemma-2-9b-it"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForCausalLM.from_pretrained(
     model_name, 
-    # device_map='auto',  
+    device_map='auto',  
+    torch_dtype=torch.float16
 ).to(device)
 
 file_path = './data/jb2f-yxcbRA_chat.csv'

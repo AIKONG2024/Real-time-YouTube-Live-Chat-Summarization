@@ -82,11 +82,11 @@ class Chat_Crawler:
                     print(f"Error while processing chat data: {e}")
                     break
         print("-crawling 완료-")
-        
+     
+from dotenv import load_dotenv   
 #Test
 if __name__ == "__main__":
-    from dotenv import load_dotenv
     load_dotenv()
     api_key = os.getenv('YOUTUBE_API_KEY')
-    croling_instance = Chat_Crawler(collect_time=10, youtube_api_key=api_key, video_id="w3YN5dH1JaQ", channel_name="mudo")
+    croling_instance = Chat_Crawler(collect_time=30, youtube_api_key=api_key, video_id="jb2f-yxcbRA")
     croling_instance.do_crawling()

@@ -93,4 +93,3 @@ class CommentSummarizer:
             print("긍정 및 부정 비율을 추출하는 데 오류가 발생했습니다.")
 
         return positive_ratio, negative_ratio
-

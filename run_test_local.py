@@ -12,8 +12,8 @@ def main():
 
     # Step 1: 채팅 크롤링
     print("=== Step 1: 채팅 크롤링 시작 ===")
-    video_id = "FJfwehhzIhw"  # 비디오 ID 설정
-    collect_time = 60  # 크롤링 시간 (초)
+    video_id = "jb2f-yxcbRA"  # 비디오 ID 설정
+    collect_time = 20  # 크롤링 시간 (초)
 
     # Chat_Crawler 인스턴스 생성 및 크롤링 수행
     crawler = Chat_Crawler(collect_time=collect_time, youtube_api_key=api_key, video_id=video_id)
