@@ -34,7 +34,5 @@ python version : 3.11.9
    #I performed inference using a 4090 GPU. Systems with lower performance may not be able to run this.
 
 ##  Used LLM Model
-  Gemma1,2 Korean Fine-tunning Models  
-  
+  Gemma2 Korean Fine-tunning Model  
   **rtzr/ko-gemma-2-9b-it(https://huggingface.co/rtzr/ko-gemma-2-9b-it)**  
-  **beomi/gemma-ko-2b(https://huggingface.co/beomi/gemma-ko-2b)**
