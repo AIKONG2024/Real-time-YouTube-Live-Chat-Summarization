@@ -2,7 +2,8 @@ import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
 class CommentSummarizer:
-    def __init__(self, model_name):
+    def __init__(self):
+        model_name = "rtzr/ko-gemma-2-9b-it"  # 모델 이름
         # 모델과 토크나이저 초기화
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -13,32 +14,11 @@ class CommentSummarizer:
         )
         self.chat_file_path = None
 
-    def set_chat_file_path(self, chat_file_path):
-        self.chat_file_path = chat_file_path
-
-    def __load_chat(self):
-        # 채팅 데이터를 로드하고 전처리
-        if self.chat_file_path:
-            with open(self.chat_file_path, 'r', encoding='utf-8') as f:
-                comments = f.read()
-            return comments
-        else:
-            return ""
-
     def summarize(self, prompt_template, should_stop=None, max_length=500, temperature=0.7):
-        comments = self.__load_chat()
-        prompt = prompt_template.format(comments=comments)
+        prompt = prompt_template
+        
         input_ids = self.tokenizer.encode(prompt, return_tensors='pt').to(self.device)
         prompt_length = input_ids.shape[-1]
-
-        # 텍스트 생성 설정
-        generate_kwargs = {
-            'input_ids': input_ids,
-            'max_length': prompt_length + max_length,
-            'do_sample': True,
-            'temperature': temperature,
-            'pad_token_id': self.tokenizer.eos_token_id,
-        }
 
         # 생성 진행 중에 중단 여부 확인
         output = input_ids
@@ -64,12 +44,12 @@ class CommentSummarizer:
         generated_text = self.tokenizer.decode(generated_tokens, skip_special_tokens=True)
         
         # 긍정 및 부정 비율 추출
-        positive_ratio, negative_ratio = self.extract_sentiment(generated_text)
+        positive_ratio, negative_ratio = self.__extract_sentiment(generated_text)
 
         # 요약 내용과 긍정/부정 비율 반환
         return generated_text.strip(), positive_ratio, negative_ratio
 
-    def extract_sentiment(self, generated_text):
+    def __extract_sentiment(self, generated_text):
         # "긍정:XX/부정:XX" 형식의 데이터 추출
         print(generated_text)
         

@@ -15,8 +15,7 @@ load_dotenv()
 api_key = os.getenv('YOUTUBE_API_KEY')
 
 # 모델을 애플리케이션 시작 시 전역 변수로 로드
-model_name = "rtzr/ko-gemma-2-9b-it"
-summarizer = CommentSummarizer(model_name=model_name)
+summarizer = CommentSummarizer()
 
 # 공유 데이터와 락 초기화
 summarizing_status = {}
@@ -27,6 +26,15 @@ session_params = {}   # 세션별 파라미터 저장
 history = []
 status_lock = threading.Lock()
 data_lock = threading.Lock()
+chat_file_path = ""
+
+def load_chat(chat_file_path):
+    if chat_file_path:
+        with open(chat_file_path, 'r', encoding='utf-8') as f:
+            comments = f.read()
+        return comments
+    else:
+        return ""
 
 def run_summarizer(session_id):
     try:
@@ -42,6 +50,9 @@ def run_summarizer(session_id):
         video_id = params['video_id']
         collect_time = params['collect_time']
         prompt_template = params['prompt_template']
+        
+        # 채팅 파일 경로 설정
+        chat_file_path = f'./data/{video_id}_chat.csv'
 
         while summarizing_status.get(session_id, False):
             # 채팅 크롤링 및 비디오 정보 가져오기
@@ -67,27 +78,24 @@ def run_summarizer(session_id):
             crawler.do_crawling()
             print("=== 채팅 크롤링 완료 ===")
 
-            # 채팅 파일 경로 설정
-            chat_file_path = f'./data/{video_id}_chat.csv'
-
-            # 크롤링한 채팅 내용을 저장
+            # 크롤링한 채팅 데이터를 새로 읽어서 세션별로 저장
             with open(chat_file_path, 'r', encoding='utf-8') as f:
                 chat_content = f.read()
 
-            # 채팅 내용 저장
+            # 각 세션별로 크롤링된 채팅 데이터를 저장
             with data_lock:
                 chat_contents[session_id] = chat_content
                 result_dict[session_id] = {"summary": ""}
 
-            # summarizer에 chat_file_path 설정
-            summarizer.set_chat_file_path(chat_file_path)
+            # 최신 크롤링된 데이터를 기반으로 입력 프롬프트 생성
+            prompt = prompt_template.format(comments=chat_content)
 
             # 요약 결과 생성
             print("=== 요약 생성 시작 ===")
             def should_stop():
                 with status_lock:
                     return not summarizing_status.get(session_id, False)
-            summary_result, positive_ratio, negative_ratio = summarizer.summarize(prompt_template, should_stop=should_stop)
+            summary_result, positive_ratio, negative_ratio = summarizer.summarize(prompt, should_stop=should_stop)
             print("=== 요약 생성 완료 ===")
 
             # 요약 결과 저장
@@ -97,18 +105,17 @@ def run_summarizer(session_id):
                 result_dict[session_id]["negative_ratio"] = negative_ratio
                 history.append(summary_result)
 
-            # 상태 확인 후 대기 (대기 시간 후 다시 반복)
+            # 상태 확인 후 대기 (다음 크롤링 및 요약 작업까지 대기)
+            print(f"Waiting {collect_time} seconds before next iteration.")
             wait_time = 0
             while wait_time < collect_time:
                 with status_lock:
                     if not summarizing_status.get(session_id, False):
+                        print("Summarization stopped.")
                         return  # 중지 명령을 받으면 함수를 종료
                 time.sleep(1)
                 wait_time += 1
 
-            # 연속 요약을 위한 작은 대기 시간 설정
-            time.sleep(1)  # 초 후 다음 요약을 시작 (조정 가능)
-    
     except Exception as e:
         print(f"에러 발생: {str(e)}")
         with data_lock:
@@ -130,8 +137,9 @@ def start_summary():
     # 세션 ID 생성
     session_id = str(uuid.uuid4())
 
-    # 입력 프롬프트 생성
-    prompt_template = """{comments}
+    # 입력 프롬프트 생성 (크롤링 완료 후 데이터를 기반으로 생성)
+    prompt_template = """
+{comments}
 
 위의 유튜브 라이브 채팅 댓글을 읽고, 주제와 대화의 흐름을 파악하여 아래의 형식으로 부드럽고 친근한 어조로 존댓말로 요약해줘:
 
@@ -159,7 +167,7 @@ def start_summary():
         'prompt_template': prompt_template
     }
 
-    # 요약 작업을 별도의 스레드에서 실행
+    # 요약 작업을 별도의 스레드에서 실행 (크롤링 완료 후 요약)
     summarizer_thread = threading.Thread(
         target=run_summarizer,
         args=(session_id,)

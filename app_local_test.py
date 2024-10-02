@@ -5,6 +5,14 @@ from dotenv import load_dotenv
 from chat_crawler import Chat_Crawler  # 채팅 크롤링 클래스
 from summarizer import CommentSummarizer  # 댓글 요약 클래스
 
+def load_chat(chat_file_path):
+    if chat_file_path:
+        with open(chat_file_path, 'r', encoding='utf-8') as f:
+            comments = f.read()
+        return comments
+    else:
+        return ""
+
 def main():
     # .env 파일에서 API 키 로드
     load_dotenv()
@@ -12,8 +20,8 @@ def main():
 
     # Step 1: 채팅 크롤링
     print("=== Step 1: 채팅 크롤링 시작 ===")
-    video_id = "jb2f-yxcbRA"  # 비디오 ID 설정
-    collect_time = 20  # 크롤링 시간 (초)
+    video_id = "NQ6XGcsbZKE"  # 비디오 ID 설정
+    collect_time = 5  # 크롤링 시간 (초)
 
     # Chat_Crawler 인스턴스 생성 및 크롤링 수행
     crawler = Chat_Crawler(collect_time=collect_time, youtube_api_key=api_key, video_id=video_id)
@@ -21,12 +29,11 @@ def main():
 
     # Step 2: 크롤링한 댓글 요약
     print("=== Step 2: 댓글 요약 시작 ===")
-    model_name = "rtzr/ko-gemma-2-9b-it"  # 모델 이름
     chat_file_path = f'./data/{video_id}_chat.csv'  # 크롤링한 데이터 파일 경로
 
     # CommentSummarizer 인스턴스 생성 및 요약 수행
-    summarizer = CommentSummarizer(model_name=model_name)
-    summarizer.set_chat_file_path(chat_file_path)
+    summarizer = CommentSummarizer()
+    comments = load_chat(chat_file_path)
     # 입력 프롬프트
     prompt_template = """{comments}
 
@@ -48,7 +55,7 @@ def main():
 - 긍정과 부정의 비율은 전체 100%를 기준으로 계산해줘.
 - 다른 불필요한 말은 생략하고, 위의 형식으로만 출력해줘.
 """
-
+    prompt_template = prompt_template.format(comments=comments)
     # 요약 결과 생성
     summary = summarizer.summarize(prompt_template)
     
