@@ -85,7 +85,7 @@ def run_summarizer(session_id):
             # 각 세션별로 크롤링된 채팅 데이터를 저장
             with data_lock:
                 chat_contents[session_id] = chat_content
-                result_dict[session_id] = {"summary": ""}
+                result_dict[session_id] = {"summary": "요약 중..."}
 
             # 최신 크롤링된 데이터를 기반으로 입력 프롬프트 생성
             prompt = prompt_template.format(comments=chat_content)
@@ -234,7 +234,7 @@ def update_summary():
     session_id = request.json.get('session_id')
     with data_lock:
         summary_data = result_dict.get(session_id, {})
-        summary_result = summary_data.get("summary", "")
+        summary_result = summary_data.get("summary", "요약 중....")
         
         # 긍정/부정 비율도 반환
         positive_ratio = summary_data.get("positive_ratio", 50)  # 기본값 50
