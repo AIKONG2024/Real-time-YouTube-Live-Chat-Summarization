@@ -1,5 +1,5 @@
 # Real-time YouTube Live Chat Summarization
-![제목-없는-디자인_cropped](https://github.com/user-attachments/assets/d839b14b-cdb3-40e4-b57b-9f9b55bcea00)
+![제목 없는 디자인 (2) (1) (2)](https://github.com/user-attachments/assets/67320e6a-aafa-40db-abb2-a50018072424)
 
 1. **Enter the Video ID of the YouTube Live chat and Input the chat collection duration**
 2. **The summary will repeat continuously**
